@@ -5,14 +5,24 @@ RESET="\033[0m"
 
 class Ball():
 
-    def __init__(self, index: int, number, is_power_ball = False):
+    def __init__(self, index: int, number: int, is_power_ball: bool = False):
 
         self.power_ball = is_power_ball
-        self.index = self.set_index(index)
-        self.number = self.set_number(number)
+        self.index = index
+        self.number = number
 
+    def __getattr__(self, name: str):
+        return self.__dict__[f"_{name}"]
 
-    def set_number(self, number):
+    def __setattr__(self, name, value):
+        if name == "number":
+            self.__dict__[f"_{name}"] = self.set_number(value)
+        elif name == "index":
+            self.__dict__[f"_{name}"] = self.set_index(value)
+        else:
+            self.__dict__[f"_{name}"] = value
+
+    def set_number(self, number: int) -> int:
 
         # Ensure input type is int
         if isinstance(number,int):
@@ -39,9 +49,7 @@ class Ball():
         else:
             raise TypeError("Number must be an integer!")
 
-
-
-    def set_index(self, index):
+    def set_index(self, index: int) -> int:
 
         # Power Ball - has no index
         if self.power_ball:

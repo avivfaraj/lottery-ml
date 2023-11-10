@@ -4,22 +4,15 @@ try:
 except ImportError:
     from ball import Ball
 
+from typing import List
+
 # Regular winner numbers constant
 WHITEBALL_COUNT = 5
 
-# Define count error - there are 5 white balls, so count must match.
+# Define count error - there are 5 white balls and 1 powerball in each drawing.
 class CountError(Exception):
-    def __init__(self, count, message=""):
-        self.count = count
-        self.message = message
-        if not self.message:
-            if count > WHITEBALL_COUNT:
-                self.message = f"Too many white balls ({self.count}). There are only 5 in each drawing!"
-
-            if count < WHITEBALL_COUNT:
-                self.message = f"Missing white balls (got {self.count} instead of 5)."
-
-        super().__init__(self.message)
+    def __init__(self, message):
+        super().__init__(message)
 
 class Drawing():
 
@@ -27,34 +20,89 @@ class Drawing():
         self.winning_numbers_ls = []
         self.date = date
 
-    def add_winning_number(self, number, is_power_ball):
+    def ensure_data_is_valid(self, number: int, is_power_ball: bool) -> None:
+        """
+        Ensure balls count (white and powerball) is within
+        acceptable limit (5 and 1 respectively)
+
+        Parameters
+        ----------
+            is_power_ball - boolean
+                True if the number to be add is a powerball.
+
+        Raise
+        -----
+            CountError - when number of whiteballs exceeds 5
+                         or number of powerball exceeds 1.
+
+            TypeError - when the number is not integer!
+        """
+        if not isinstance(number, int):
+            raise TypeError("Winning number must be an integer!")
+
+        whiteball_count = sum([1 if not i.power_ball else 0 for i in self.winning_numbers_ls])
+        powerball_count = sum([1 if i.power_ball else 0 for i in self.winning_numbers_ls])
+
+        if powerball_count == 1 and is_power_ball:
+            raise CountError("Current drawing already has a powerball! (max)")
+
+        if whiteball_count == 5 and not is_power_ball:
+            raise CountError("Current drawing already has 5 (max) whiteballs!")
+
+    def add_winning_number(self, number: int, is_power_ball: bool):
+        """
+        Adding one winning number to the drawing.
+        The winning number can be either whiteball or powerball,
+        depends on is_power_ball value.
+
+        Parameters
+        ----------
+            is_power_ball - boolean
+                True if the number to be add is a powerball.
+
+        Returns
+        -------
+            Nothing is returned, but raises CountError if count is invalid.
+        """
+        self.ensure_data_is_valid(number, is_power_ball)
         index = len(self.winning_numbers_ls) + 1
         ball = Ball(index, number, is_power_ball)
         self.winning_numbers_ls.append(ball)
 
-    def add_winning_ls(self, winners_ls):
-        total_winners = len(winners_ls) + len(self.winning_numbers_ls)
-        if not total_winners == WHITEBALL_COUNT:
-            raise CountError(total_winners)
+    def add_winning_ls(self, winners_ls: List[int]) -> None:
+        """
+        Adding a list of winning numbers (whiteballs) to the current drawing.
 
+        Parameters
+        ----------
+            winner_ls - List[int]
+                list of winning numbers (white balls)
+        """
         for number in winners_ls:
-            index = len(self.winning_numbers_ls) + 1
-            ball = Ball(index, number, False)
-            self.winning_numbers_ls.append(ball)
+            self.add_winning_number(number, False)
 
-    def print(self):
-        str_ = ""
+    def print(self) -> None:
+        """
+        Prints drawing details to stdout.
+        """
+        # Final string that includes the winning numbers.
+        str_ = f"Drawing Date: {self.date} \nWinning numbers: "
+
+        # Store power ball number in case it is not the last element in the list.
+        power_ball = ""
+
+        # Iterating over winning numbers
         for ball in self.winning_numbers_ls:
-            str_ += f" {ball}"
-        print(str_)
 
-if __name__=="__main__":
-    test = Drawing("2023-06-20")
-    test.add_winning_ls([6,12,10,30, 45 , 60])
-    # test.add_winning_number(6, False)
-    # test.add_winning_number(12, False)
-    # test.add_winning_number(10, False)
-    # test.add_winning_number(30, False)
-    # test.add_winning_number(45, False)
-    # test.add_winning_number(3, True)
-    test.print()
+            # Ensure power ball is listed at the end!
+            if ball.power_ball:
+                power_ball = f" {ball}"
+
+            # White balls are appended to the list as they are read.
+            else:
+                str_ += f" {ball}"
+
+        # Append power ball at the end.
+        str_ += f"{power_ball}"
+
+        print(str_)
