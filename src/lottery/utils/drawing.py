@@ -9,13 +9,14 @@ from typing import List
 # Regular winner numbers constant
 WHITEBALL_COUNT = 5
 
+
 # Define count error - there are 5 white balls and 1 powerball in each drawing.
 class CountError(Exception):
     def __init__(self, message):
         super().__init__(message)
 
-class Drawing():
 
+class Drawing:
     def __init__(self, date):
         self.winning_numbers_ls = []
         self.date = date
@@ -40,8 +41,12 @@ class Drawing():
         if not isinstance(number, int):
             raise TypeError("Winning number must be an integer!")
 
-        whiteball_count = sum([1 if not i.power_ball else 0 for i in self.winning_numbers_ls])
-        powerball_count = sum([1 if i.power_ball else 0 for i in self.winning_numbers_ls])
+        whiteball_count = sum(
+            [1 if not i.power_ball else 0 for i in self.winning_numbers_ls]
+        )
+        powerball_count = sum(
+            [1 if i.power_ball else 0 for i in self.winning_numbers_ls]
+        )
 
         if powerball_count == 1 and is_power_ball:
             raise CountError("Current drawing already has a powerball! (max)")
@@ -88,12 +93,12 @@ class Drawing():
         # Final string that includes the winning numbers.
         str_ = f"Drawing Date: {self.date} \nWinning numbers: "
 
-        # Store power ball number in case it is not the last element in the list.
+        # Store power ball number in case
+        # it is not the last element in the list.
         power_ball = ""
 
         # Iterating over winning numbers
         for ball in self.winning_numbers_ls:
-
             # Ensure power ball is listed at the end!
             if ball.power_ball:
                 power_ball = f" {ball}"

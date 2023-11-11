@@ -1,13 +1,10 @@
 import sys
-sys.path.append('..')
-
-from utils.ball import Ball
+sys.path.append("..")
 from utils.drawing import Drawing
-
 from selenium import webdriver
-from selenium.webdriver.common.keys import Keys
+# TODO: use Keys to press "Load More" button
+from selenium.webdriver.common.keys import Keys  # noqa: F401
 from selenium.webdriver.common.by import By
-from selenium.webdriver import ActionChains
 
 
 if __name__ == "__main__":
@@ -21,16 +18,19 @@ if __name__ == "__main__":
         link = str(card.get_attribute("href"))
         date = link.split("date=")[1]
         drawing = Drawing(date)
-        drawing.add_winning_ls([int(item.text)
-                                for item in card.find_elements(By.CLASS_NAME, "white-balls")])
-        # for index, item in enumerate(card.find_elements(By.CLASS_NAME, "white-balls")):
-        #     drawing.add_winning_number(int(item.text), False)
+        drawing.add_winning_ls(
+            [
+                int(item.text)
+                for item in card.find_elements(By.CLASS_NAME, "white-balls")
+            ]
+        )
 
-        drawing.add_winning_number(int(card.find_element(By.CLASS_NAME, "powerball").text), True)
+        drawing.add_winning_number(
+            int(card.find_element(By.CLASS_NAME, "powerball").text), True
+        )
         drawing_ls.append(drawing)
 
     for draw in drawing_ls:
         draw.print()
         print()
     driver.close()
-
