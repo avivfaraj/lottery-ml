@@ -30,6 +30,8 @@ class ScrapePowerBall():
         self.driver = webdriver.Firefox(options=OPTIONS)
         self.driver.get(WEBSITE_TO_SCRAPE)
 
+    # Credits to Leodanis Pozo Ramos (realpython) for the __getattr__ and __setattr__
+    # https://realpython.com/python-getter-setter/#the-__setattr__-and-__getattr__-methods
     def __getattr__(self, name: str):
         return self.__dict__[f"_{name}"]
 
