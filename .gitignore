@@ -144,4 +144,5 @@ dmypy.json
 .com.apple.timemachine.donotpresent
 
 **/.ipynb_checkpoints
+**/*.csv
 

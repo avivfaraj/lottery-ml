@@ -111,3 +111,8 @@ class Drawing:
         str_ += f"{power_ball}"
 
         print(str_)
+
+    def get_winning_ls(self) -> List[str]:
+        _ = [ball.number for ball in self.winning_numbers_ls]
+        _.insert(0, self.date)
+        return _

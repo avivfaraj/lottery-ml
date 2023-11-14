@@ -8,6 +8,8 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.firefox.options import Options as FirefoxOptions
 from typing import Any
 from selenium.webdriver.remote.webelement import WebElement
+import csv
+import os
 
 OPTIONS = FirefoxOptions()
 OPTIONS.add_argument("--headless")
@@ -76,6 +78,19 @@ class ScrapePowerBall():
             drawing.print()
             print()
 
+    def to_csv(self, path: str, file_name: str):
+        if not os.path.exists(path):
+            raise ValueError("Invalid path")
+
+        if ".csv" not in file_name:
+            file_name += ".csv"
+
+        with open(f"{path}/{file_name}", "w") as file:
+            writer = csv.writer(file)
+            writer.writerow(["date", "ball_1", "ball_2", "ball_3", "ball_4", "ball_5", "powerball"])
+            for drawing in self.drawings_ls:
+                writer.writerow(drawing.get_winning_ls())
+
     def __del__(self) -> None:
         print("Closing driver")
         self.driver.quit()
@@ -87,5 +102,6 @@ if __name__ == "__main__":
     spb.load_drawings(num=3)
     # print(spb.scrape_last_drawing_date())
     spb.scrape_drawings()
-    spb.print_drawings()
+    spb.to_csv("./", "test")
+    # spb.print_drawings()
     del spb
