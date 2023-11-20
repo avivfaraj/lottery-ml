@@ -1,12 +1,14 @@
-import sys
-sys.path.append("..")
-from utils.drawing import Drawing
+try:
+    import sys
+    sys.path.append("..")
+    from utils.drawing import Drawing
+except ModuleNotFoundError:
+    from src.lottery.utils.drawing import Drawing
 from selenium import webdriver
-# TODO: use Keys to press "Load More" button
 from selenium.webdriver.common.keys import Keys  # noqa: F401
 from selenium.webdriver.common.by import By
 from selenium.webdriver.firefox.options import Options as FirefoxOptions
-from typing import Any
+from typing import Any, List
 from selenium.webdriver.remote.webelement import WebElement
 import csv
 import os
@@ -19,6 +21,8 @@ WEBSITE_TO_SCRAPE = "https://www.powerball.com/previous-results?gc=powerball"
 class ScrapePowerBall():
 
     def __init__(self, end_date: str = ""):
+
+        # TODO: Use end_date to limit number of new drawings
         self.end_date = end_date
 
         # pre-processing (raw results from web scraping)
@@ -26,6 +30,7 @@ class ScrapePowerBall():
 
         # post-processing results
         self.drawings_ls = []
+        self.len_drawings = 0
 
         # TODO: Replace DRIVER constant with protected variable
         #       to allow choosing different drivers (chrome, opera, etc.)
@@ -41,14 +46,38 @@ class ScrapePowerBall():
         self.__dict__[f"_{name}"] = value
 
     def extract_date(self, card: WebElement) -> str:
+        """
+        Reads and returns the date of a specific drawing
+
+        Parameters
+        ----------
+            Card - WebElement (Selenium)
+                Element read from powerball website
+
+        Returns
+        --------
+            Date - String
+        """
         link = str(card.get_attribute("href"))
         date = link.split("date=")[1]
         return date
 
     def scrape_last_drawing_date(self) -> str:
+        """
+        Return the date of the last drwaing that was scraped.
+
+        Returns
+        --------
+            Date - String
+        """
         return self.extract_date(self.cards_ls[-1])
 
     def scrape_drawings(self) -> None:
+        """
+        Scrape lottery cards (drawings) from powerball website.
+        """
+        self.drawings_ls = []
+        self.len_drawings = 0
         for card in self.cards_ls:
             date = self.extract_date(card)
             drawing = Drawing(date)
@@ -63,8 +92,23 @@ class ScrapePowerBall():
                 int(card.find_element(By.CLASS_NAME, "powerball").text), True
             )
             self.drawings_ls.append(drawing)
+            self.len_drawings += 1
 
     def load_drawings(self, num: int = 1) -> None:
+        """
+        Pressing the "Load More" button to get more drawings.
+        Each press loads about 30 lottery drawings.
+
+        Parameters
+        ----------
+            num - int
+                Represent the times to press the button.
+
+        Returns
+        --------
+            Date - String
+        """
+        self.cards_ls = []
         for i in range(num):
             print(f"Scroll #{i+1} Done")
             elem = self.driver.find_element(By.ID, "loadMore")
@@ -74,11 +118,45 @@ class ScrapePowerBall():
         self.cards_ls = self.driver.find_elements(By.CLASS_NAME, "card")
 
     def print_drawings(self) -> None:
+        """
+        Print lottery drawings one after the other using Drawing.print method
+        """
         for drawing in self.drawings_ls:
             drawing.print()
             print()
 
-    def to_csv(self, path: str, file_name: str):
+    def sort_drawings_by_date(self, descending: bool = True) -> List[Drawing]:
+        """
+        Sort drawing by date in descending order if decending is True.
+
+        Parameters
+        ----------
+            descending - boolean
+                If True, drawings are sorted in descending order
+
+        Returns
+        --------
+            Ordered Drawings - List of Drawing
+        """
+        return sorted(self.drawings_ls, key=lambda x: x.date, reverse=descending)
+
+    def to_csv(self, path: str, file_name: str) -> None:
+        """
+        Export results to csv file.
+
+        Parameters
+        ----------
+            path - str
+                Folder in which the csv file is stored.
+
+            file_name - str
+                Name of the csv file. If doesn't contain .csv,
+                extension will be added.
+
+        Errors
+        --------
+            ValueError - Folder doesn't exist (path is invalid)
+        """
         if not os.path.exists(path):
             raise ValueError("Invalid path")
 
@@ -88,20 +166,13 @@ class ScrapePowerBall():
         with open(f"{path}/{file_name}", "w") as file:
             writer = csv.writer(file)
             writer.writerow(["date", "ball_1", "ball_2", "ball_3", "ball_4", "ball_5", "powerball"])
-            for drawing in self.drawings_ls:
+            for drawing in self.sort_drawings_by_date():
                 writer.writerow(drawing.get_winning_ls())
 
     def __del__(self) -> None:
+        """
+        Close Selenium driver.
+        """
         print("Closing driver")
         self.driver.quit()
         print("Driver Closed!")
-
-
-if __name__ == "__main__":
-    spb = ScrapePowerBall()
-    spb.load_drawings(num=3)
-    # print(spb.scrape_last_drawing_date())
-    spb.scrape_drawings()
-    spb.to_csv("./", "test")
-    # spb.print_drawings()
-    del spb
