@@ -34,4 +34,4 @@ jobs:
 
       - name: Testing the code with pytest
         run: |
-          pytest .
+          pytest . -v
