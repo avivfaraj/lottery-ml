@@ -1,6 +1,8 @@
 import sys
+
 sys.path.append("..")
 from src.lottery.webscraping.powerball import ScrapePowerBall
+
 # from src.lottery.utils.ball import WHITEBALL_BG, POWERBALL_BG, RESET
 import pytest
 import os
@@ -17,7 +19,7 @@ def spb_2():
 
 
 # Run test manualy (local)
-@pytest.mark.skip
+@pytest.mark.webtest
 def test_load_30_drawings(spb):
     # pre-scraping
     assert len(spb.cards_ls) == 0
@@ -42,7 +44,7 @@ def test_load_30_drawings(spb):
 
 
 # Run test manualy (local)
-@pytest.mark.skip
+@pytest.mark.webtest
 def test_load_60_drawings(spb_2):
     # pre-scraping
     assert len(spb_2.cards_ls) == 0
