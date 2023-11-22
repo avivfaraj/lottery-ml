@@ -17,9 +17,10 @@ class CountError(Exception):
 
 
 class Drawing:
-    def __init__(self, date):
+    def __init__(self, date, estimated_jackpot: int = -1):
         self.winning_numbers_ls = []
         self.date = date
+        self.estimated_jackpot = estimated_jackpot
 
     def ensure_data_is_valid(self, number: int, is_power_ball: bool) -> None:
         """
@@ -41,12 +42,8 @@ class Drawing:
         if not isinstance(number, int):
             raise TypeError("Winning number must be an integer!")
 
-        whiteball_count = sum(
-            [1 if not i.power_ball else 0 for i in self.winning_numbers_ls]
-        )
-        powerball_count = sum(
-            [1 if i.power_ball else 0 for i in self.winning_numbers_ls]
-        )
+        whiteball_count = sum([1 if not i.power_ball else 0 for i in self.winning_numbers_ls])
+        powerball_count = sum([1 if i.power_ball else 0 for i in self.winning_numbers_ls])
 
         if powerball_count == 1 and is_power_ball:
             raise CountError("Current drawing already has a powerball! (max)")
@@ -115,4 +112,12 @@ class Drawing:
     def get_winning_ls(self) -> List[str]:
         _ = [ball.number for ball in self.winning_numbers_ls]
         _.insert(0, self.date)
+        if self.estimated_jackpot != -1:
+            _.append(self.get_formatted_jackpot())
         return _
+
+    def get_formatted_jackpot(self) -> str:
+        if self.estimated_jackpot != -1:
+            return f"{self.estimated_jackpot:,d}"
+
+        return "Jackpot is missing (was not scraped)"

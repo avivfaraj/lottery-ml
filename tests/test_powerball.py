@@ -40,7 +40,7 @@ def test_load_30_drawings(spb):
     os.remove("./test.csv")
 
     # post-scarping (pre-processing)
-    assert len(count) == 30
+    assert len(count) == 60
 
 
 # Run test manualy (local)
@@ -65,4 +65,4 @@ def test_load_60_drawings(spb_2):
     os.remove("./test.csv")
 
     # post-scarping (pre-processing)
-    assert len(count) == 60
+    assert len(count) == 90

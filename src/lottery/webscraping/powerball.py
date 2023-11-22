@@ -1,5 +1,6 @@
 try:
     import sys
+
     sys.path.append("..")
     from utils.drawing import Drawing
 except ModuleNotFoundError:
@@ -10,6 +11,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.firefox.options import Options as FirefoxOptions
 from typing import Any, List
 from selenium.webdriver.remote.webelement import WebElement
+from selenium.common.exceptions import TimeoutException
 import csv
 import os
 
@@ -18,12 +20,14 @@ OPTIONS.add_argument("--headless")
 WEBSITE_TO_SCRAPE = "https://www.powerball.com/previous-results?gc=powerball"
 
 
-class ScrapePowerBall():
-
-    def __init__(self, end_date: str = ""):
-
+class ScrapePowerBall:
+    def __init__(self, end_date: str = "", with_jackpot: bool = True):
         # TODO: Use end_date to limit number of new drawings
         self.end_date = end_date
+
+        # Scraping estimated jackpot requires opening a new link (new tab)
+        # So it takes more time to scrape. Set to False to skip that part.
+        self.jackpot = with_jackpot
 
         # pre-processing (raw results from web scraping)
         self.cards_ls = []
@@ -35,7 +39,8 @@ class ScrapePowerBall():
         # TODO: Replace DRIVER constant with protected variable
         #       to allow choosing different drivers (chrome, opera, etc.)
         self.driver = webdriver.Firefox(options=OPTIONS)
-        self.driver.get(WEBSITE_TO_SCRAPE)
+        self.driver.set_page_load_timeout(2)
+        self.get_website(WEBSITE_TO_SCRAPE)
 
     # Credits to Leodanis Pozo Ramos (realpython) for the __getattr__ and __setattr__
     # https://realpython.com/python-getter-setter/#the-__setattr__-and-__getattr__-methods
@@ -72,6 +77,43 @@ class ScrapePowerBall():
         """
         return self.extract_date(self.cards_ls[-1])
 
+    def get_website(self, link) -> None:
+        # Some links takes long time to load. If so, stop and extract data.
+        try:
+            self.driver.get(link)
+        except TimeoutException:
+            self.driver.execute_script("window.stop();")
+
+    def scrape_jackpot(self, card) -> int:
+        # Extract link of the specific drawing
+        link = str(card.get_attribute("href"))
+
+        # Open link in a new tab
+        self.driver.execute_script("window.open('');")
+        self.driver.switch_to.window(self.driver.window_handles[1])
+
+        self.get_website(link)
+
+        # Find div where estimated jackpot is located in.
+        jackpot_div = self.driver.find_elements(By.CLASS_NAME, "estimated-jackpot")[
+            0
+        ].get_attribute("innerHTML")
+        est_jackpot = jackpot_div.split("<span>")[-1].split("</span>")[0]
+        est_jackpot = est_jackpot.replace("$", "")
+
+        # Close new tab
+        self.driver.close()
+
+        # Switch to main tab - list of drawings
+        self.driver.switch_to.window(self.driver.window_handles[0])
+
+        jackpot_int = float(est_jackpot.split(" ")[0])
+        if "Million" in est_jackpot:
+            return int(jackpot_int * 10**6)
+
+        if "Billion" in est_jackpot:
+            return int(jackpot_int * 10**9)
+
     def scrape_drawings(self) -> None:
         """
         Scrape lottery cards (drawings) from powerball website.
@@ -80,12 +122,9 @@ class ScrapePowerBall():
         self.len_drawings = 0
         for card in self.cards_ls:
             date = self.extract_date(card)
-            drawing = Drawing(date)
+            drawing = Drawing(date, self.scrape_jackpot(card))
             drawing.add_winning_ls(
-                [
-                    int(item.text)
-                    for item in card.find_elements(By.CLASS_NAME, "white-balls")
-                ]
+                [int(item.text) for item in card.find_elements(By.CLASS_NAME, "white-balls")]
             )
 
             drawing.add_winning_number(
@@ -93,6 +132,8 @@ class ScrapePowerBall():
             )
             self.drawings_ls.append(drawing)
             self.len_drawings += 1
+
+            print(f"{drawing.date}, {drawing.get_formatted_jackpot()}")
 
     def load_drawings(self, num: int = 1) -> None:
         """
@@ -114,7 +155,7 @@ class ScrapePowerBall():
             elem = self.driver.find_element(By.ID, "loadMore")
             elem.send_keys(Keys.RETURN)
 
-        self.driver.find_element(By.TAG_NAME, 'body').send_keys(Keys.END)
+        self.driver.find_element(By.TAG_NAME, "body").send_keys(Keys.END)
         self.cards_ls = self.driver.find_elements(By.CLASS_NAME, "card")
 
     def print_drawings(self) -> None:
@@ -163,9 +204,13 @@ class ScrapePowerBall():
         if ".csv" not in file_name:
             file_name += ".csv"
 
+        headers = ["date", "ball_1", "ball_2", "ball_3", "ball_4", "ball_5", "powerball"]
+        if self.jackpot:
+            headers.append("estimated_jackpot")
+
         with open(f"{path}/{file_name}", "w") as file:
             writer = csv.writer(file)
-            writer.writerow(["date", "ball_1", "ball_2", "ball_3", "ball_4", "ball_5", "powerball"])
+            writer.writerow(headers)
             for drawing in self.sort_drawings_by_date():
                 writer.writerow(drawing.get_winning_ls())
 
