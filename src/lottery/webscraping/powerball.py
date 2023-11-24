@@ -12,6 +12,9 @@ from selenium.webdriver.firefox.options import Options as FirefoxOptions
 from typing import Any, List
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.common.exceptions import TimeoutException
+from selenium.webdriver.support.wait import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+
 import csv
 import os
 
@@ -36,12 +39,6 @@ class ScrapePowerBall:
         self.drawings_ls = []
         self.len_drawings = 0
 
-        # TODO: Replace DRIVER constant with protected variable
-        #       to allow choosing different drivers (chrome, opera, etc.)
-        self.driver = webdriver.Firefox(options=OPTIONS)
-        self.driver.set_page_load_timeout(2)
-        self.get_website(WEBSITE_TO_SCRAPE)
-
     # Credits to Leodanis Pozo Ramos (realpython) for the __getattr__ and __setattr__
     # https://realpython.com/python-getter-setter/#the-__setattr__-and-__getattr__-methods
     def __getattr__(self, name: str):
@@ -49,6 +46,20 @@ class ScrapePowerBall:
 
     def __setattr__(self, name: str, value: Any):
         self.__dict__[f"_{name}"] = value
+
+    def __enter__(self) -> WebElement:
+        # TODO: Replace DRIVER constant with protected variable
+        #       to allow choosing different drivers (chrome, opera, etc.)
+        # print("Connected!")
+        self.driver = webdriver.Firefox(options=OPTIONS)
+        self.driver.set_page_load_timeout(2)
+        self.get_website(WEBSITE_TO_SCRAPE)
+        return self
+
+    def __exit__(self, exc_type, exc_value, exc_traceback) -> None:
+        # print("Closing driver")
+        self.driver.quit()
+        # print("Driver Closed!")
 
     def extract_date(self, card: WebElement) -> str:
         """
@@ -95,11 +106,14 @@ class ScrapePowerBall:
         self.get_website(link)
 
         # Find div where estimated jackpot is located in.
-        jackpot_div = self.driver.find_elements(By.CLASS_NAME, "estimated-jackpot")[
-            0
-        ].get_attribute("innerHTML")
-        est_jackpot = jackpot_div.split("<span>")[-1].split("</span>")[0]
-        est_jackpot = est_jackpot.replace("$", "")
+        try:
+            jackpot_div = self.driver.find_elements(By.CLASS_NAME, "estimated-jackpot")[
+                0
+            ].get_attribute("innerHTML")
+            est_jackpot = jackpot_div.split("<span>")[-1].split("</span>")[0]
+            est_jackpot = est_jackpot.replace("$", "")
+        except IndexError:
+            return -1
 
         # Close new tab
         self.driver.close()
@@ -133,7 +147,7 @@ class ScrapePowerBall:
             self.drawings_ls.append(drawing)
             self.len_drawings += 1
 
-            print(f"{drawing.date}, {drawing.get_formatted_jackpot()}")
+            # print(f"{drawing.date}, {drawing.get_formatted_jackpot()}")
 
     def load_drawings(self, num: int = 1) -> None:
         """
@@ -150,11 +164,16 @@ class ScrapePowerBall:
             Date - String
         """
         self.cards_ls = []
+
         for i in range(num):
+            WebDriverWait(self.driver, timeout=5).until(lambda x: x.find_element(By.ID, "loadMore"))
             print(f"Scroll #{i+1} Done")
             elem = self.driver.find_element(By.ID, "loadMore")
             elem.send_keys(Keys.RETURN)
 
+        WebDriverWait(self.driver, 5).until(
+            EC.presence_of_all_elements_located((By.CLASS_NAME, "card"))
+        )
         self.driver.find_element(By.TAG_NAME, "body").send_keys(Keys.END)
         self.cards_ls = self.driver.find_elements(By.CLASS_NAME, "card")
 
@@ -213,11 +232,3 @@ class ScrapePowerBall:
             writer.writerow(headers)
             for drawing in self.sort_drawings_by_date():
                 writer.writerow(drawing.get_winning_ls())
-
-    def __del__(self) -> None:
-        """
-        Close Selenium driver.
-        """
-        print("Closing driver")
-        self.driver.quit()
-        print("Driver Closed!")
