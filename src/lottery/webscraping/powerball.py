@@ -241,3 +241,53 @@ class ScrapePowerBall:
             writer.writerow(headers)
             for drawing in self.sort_drawings_by_date():
                 writer.writerow(drawing.get_winning_ls())
+
+    def read_csv(self, path: str) -> None:
+        """
+        Reads drawings stored in a csv file (path) and loads them into drawings_ls.
+        If estimated_jackpot header is presented in csv file, it will also be read.
+
+        Parameters
+        ----------
+            path - str
+                Path to file. Can be either absolute or relative (./path_to_file) path.
+
+        Errors
+        --------
+            ValueError - Either folder or file doesn't exist.
+        """
+        if not os.path.exists(path):
+            raise ValueError("Invalid path")
+
+        if path[-4:] != ".csv":
+            raise ValueError("Invalid file type. Only csv is supproted.")
+
+        # Clear existing drawings
+        self.drawings_ls = []
+
+        # Read csv file
+        with open(path, "r") as file:
+            content = csv.reader(file)
+
+            jackpot_inc = True
+            for index, line in enumerate(content):
+                # Skip headers (index = 0)
+                if not index:
+                    if "estimated_jackpot" not in line:
+                        jackpot_inc = False
+                    continue
+
+                # Initialize drawing with its date
+                drawing = Drawing(line[0])
+
+                # Add white-balls to drawing
+                drawing.add_winning_ls([int(i) for i in line[1:6]])
+
+                # Add power ball
+                drawing.add_winning_number(int(line[6]), is_power_ball=True)
+
+                # Finally add jackpot if included
+                if jackpot_inc:
+                    drawing.estimated_jackpot = int(line[7].replace(",", ""))
+
+                self.drawings_ls.append(drawing)
