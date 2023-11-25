@@ -14,6 +14,7 @@ from selenium.webdriver.remote.webelement import WebElement
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import NoSuchElementException
 
 import csv
 import os
@@ -137,15 +138,19 @@ class ScrapePowerBall:
         for card in self.cards_ls:
             date = self.extract_date(card)
             drawing = Drawing(date, self.scrape_jackpot(card))
-            drawing.add_winning_ls(
-                [int(item.text) for item in card.find_elements(By.CLASS_NAME, "white-balls")]
-            )
+            try:
+                drawing.add_winning_ls(
+                    [int(item.text) for item in card.find_elements(By.CLASS_NAME, "white-balls")]
+                )
 
-            drawing.add_winning_number(
-                int(card.find_element(By.CLASS_NAME, "powerball").text), True
-            )
-            self.drawings_ls.append(drawing)
-            self.len_drawings += 1
+                drawing.add_winning_number(
+                    int(card.find_element(By.CLASS_NAME, "powerball").text), True
+                )
+            except NoSuchElementException:
+                return None
+            else:
+                self.drawings_ls.append(drawing)
+                self.len_drawings += 1
 
             # print(f"{drawing.date}, {drawing.get_formatted_jackpot()}")
 
@@ -200,34 +205,38 @@ class ScrapePowerBall:
         """
         return sorted(self.drawings_ls, key=lambda x: x.date, reverse=descending)
 
-    def to_csv(self, path: str, file_name: str) -> None:
+    def to_csv(self, path: str) -> None:
         """
         Export results to csv file.
 
         Parameters
         ----------
             path - str
-                Folder in which the csv file is stored.
-
-            file_name - str
-                Name of the csv file. If doesn't contain .csv,
-                extension will be added.
+                Path to file. Can be either absolute or relative (./path_to_file) path.
+                If not contain '.csv' in the end, it will be appended.
 
         Errors
         --------
             ValueError - Folder doesn't exist (path is invalid)
         """
-        if not os.path.exists(path):
-            raise ValueError("Invalid path")
+        # Default values
+        folder, file_name = "./", "test.csv"
 
-        if ".csv" not in file_name:
-            file_name += ".csv"
+        # User input
+        if path:
+            file_name = path.split("/")[-1]
+            folder = "/".join(path.split("/")[:-1])
+            if not os.path.exists(folder):
+                raise ValueError("Invalid path")
+
+            if ".csv" not in file_name:
+                file_name += ".csv"
 
         headers = ["date", "ball_1", "ball_2", "ball_3", "ball_4", "ball_5", "powerball"]
         if self.jackpot:
             headers.append("estimated_jackpot")
 
-        with open(f"{path}/{file_name}", "w") as file:
+        with open(f"{folder}/{file_name}", "w") as file:
             writer = csv.writer(file)
             writer.writerow(headers)
             for drawing in self.sort_drawings_by_date():
