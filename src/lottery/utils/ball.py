@@ -1,20 +1,27 @@
+from abc import ABC, abstractmethod
+import enum
+
+
 WHITEBALL_BG = "\033[30;47m"
-POWERBALL_BG = "\033[37;41m"
 RESET = "\033[0m"
 
 
-class Ball:
-    def __init__(self, index: int, number: int, is_power_ball: bool = False):
-        self.power_ball = is_power_ball
-        self.index = index
-        self.number = number
+class BallType(enum.Enum):
+    Whiteball = {"low": 1, "high": 69}
+    Powerball = {"low": 1, "high": 26}
+    Megaball = {"low": 1, "high": 25}
 
+
+class Ball(ABC):
     def __getattr__(self, name: str):
         return self.__dict__[f"_{name}"]
 
     def __setattr__(self, name, value):
         if name == "number":
+            # num, reg_h, reg_l, uniq_h, uniq_l = value
             self.__dict__[f"_{name}"] = self.set_number(value)
+        elif name == "type_":
+            self.__dict__[f"_{name}"] = self.set_type_(value)
         elif name == "index":
             self.__dict__[f"_{name}"] = self.set_index(value)
         else:
@@ -23,19 +30,13 @@ class Ball:
     def set_number(self, number: int) -> int:
         # Ensure input type is int
         if isinstance(number, int):
-            # Ensure power ball
-            if self.power_ball:
+            if self.type_:
+                # Unpack dictionary
+                low, high = self.type_.value.values()
+                type_ = self.type_.name
                 # Range for power ball is between 1 and 26 - otherwise raise an error
-                if number > 26 or number < 1:
-                    raise ValueError("Power ball must be between 1 and 26 (inclusive)")
-                else:
-                    return number
-
-            # White ball
-            else:
-                # Range for white ball is between 1 and 69 - otherwise raise an error
-                if number > 69 or number < 1:
-                    raise ValueError("White ball must be between 1 and 69 (inclusive)")
+                if number > high or number < low:
+                    raise ValueError(f"{type_} must be between {low} and {high} (inclusive)")
                 else:
                     return number
 
@@ -43,15 +44,22 @@ class Ball:
         else:
             raise TypeError("Number must be an integer!")
 
+    def is_unique_ball(self) -> bool:
+        if self.type_.name == "Whiteball":
+            return False
+
+        return True
+
+    @abstractmethod
     def set_index(self, index: int) -> int:
-        # Power Ball - has no index
-        if self.power_ball:
-            return -1
+        pass
 
-        # White ball - store index
-        return index
+    @abstractmethod
+    def set_type_(self):
+        pass
 
-    def __str__(self):
-        return (
-            f"{POWERBALL_BG if self.power_ball else WHITEBALL_BG}{self.number}{RESET}"
-        )
+    def format_str(self, ansi_color: str) -> str:
+        return f"{ansi_color}{self.number}{RESET}"
+
+    def __str__(self) -> str:
+        return f"{WHITEBALL_BG}{self.number}{RESET}"

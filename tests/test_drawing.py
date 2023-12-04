@@ -1,7 +1,9 @@
 import sys
+
 sys.path.append("..")
 from src.lottery.utils.drawing import Drawing, CountError
-from src.lottery.utils.ball import WHITEBALL_BG, POWERBALL_BG, RESET
+from src.lottery.utils.ball import WHITEBALL_BG, RESET
+from src.lottery.utils.powerball import POWERBALL_BG
 import pytest
 
 

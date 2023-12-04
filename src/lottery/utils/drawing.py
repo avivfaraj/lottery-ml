@@ -1,8 +1,8 @@
 # Prevent relative import error
 try:
-    from .ball import Ball
+    from .powerball import Powerball
 except ImportError:
-    from ball import Ball
+    from powerball import Powerball
 
 from typing import List
 
@@ -42,8 +42,12 @@ class Drawing:
         if not isinstance(number, int):
             raise TypeError("Winning number must be an integer!")
 
-        whiteball_count = sum([1 if not i.power_ball else 0 for i in self.winning_numbers_ls])
-        powerball_count = sum([1 if i.power_ball else 0 for i in self.winning_numbers_ls])
+        whiteball_count = sum(
+            [1 if i.type_.name == "Whiteball" else 0 for i in self.winning_numbers_ls]
+        )
+        powerball_count = sum(
+            [1 if i.type_.name == "Powerball" else 0 for i in self.winning_numbers_ls]
+        )
 
         if powerball_count == 1 and is_power_ball:
             raise CountError("Current drawing already has a powerball! (max)")
@@ -68,7 +72,7 @@ class Drawing:
         """
         self.ensure_data_is_valid(number, is_power_ball)
         index = len(self.winning_numbers_ls) + 1
-        ball = Ball(index, number, is_power_ball)
+        ball = Powerball(index, number, is_power_ball)
         self.winning_numbers_ls.append(ball)
 
     def add_winning_ls(self, winners_ls: List[int]) -> None:
@@ -97,7 +101,7 @@ class Drawing:
         # Iterating over winning numbers
         for ball in self.winning_numbers_ls:
             # Ensure power ball is listed at the end!
-            if ball.power_ball:
+            if ball.type_.name == "Powerball":
                 power_ball = f" {ball}"
 
             # White balls are appended to the list as they are read.
