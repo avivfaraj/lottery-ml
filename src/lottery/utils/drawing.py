@@ -6,7 +6,6 @@ except ImportError:
     from powerball import Powerball
     from megaball import Megaball
 
-import enum
 from typing import List
 
 # Regular winner numbers constant

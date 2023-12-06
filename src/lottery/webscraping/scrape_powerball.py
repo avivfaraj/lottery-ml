@@ -278,7 +278,7 @@ class ScrapePowerBall:
                     continue
 
                 # Initialize drawing with its date
-                drawing = Drawing("powerball",line[0])
+                drawing = Drawing("powerball", line[0])
 
                 # Add white-balls to drawing
                 drawing.add_winning_ls([int(i) for i in line[1:6]])
