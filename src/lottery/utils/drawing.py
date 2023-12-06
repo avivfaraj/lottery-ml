@@ -1,8 +1,10 @@
 # Prevent relative import error
 try:
     from .powerball import Powerball
+    from .megaball import Megaball
 except ImportError:
     from powerball import Powerball
+    from megaball import Megaball
 
 import enum
 from typing import List
@@ -13,7 +15,7 @@ WHITEBALL_COUNT = 5
 DRAWING_TYPE_DICT = {
     "powerball": Powerball,
     # TODO: Implement Megaball class
-    "megamillions": None,
+    "megaball": Megaball,
 }
 
 
