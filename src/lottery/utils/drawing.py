@@ -111,20 +111,20 @@ class Drawing:
 
         # Store power ball number in case
         # it is not the last element in the list.
-        power_ball = ""
+        unique_ball = ""
 
         # Iterating over winning numbers
         for ball in self.winning_numbers_ls:
             # Ensure power ball is listed at the end!
-            if ball.type_.name == "Powerball":
-                power_ball = f" {ball}"
+            if ball.type_.name != "Whiteball":
+                unique_ball = f" {ball}"
 
             # White balls are appended to the list as they are read.
             else:
                 str_ += f" {ball}"
 
         # Append power ball at the end.
-        str_ += f"{power_ball}"
+        str_ += f"{unique_ball}"
 
         print(str_)
 

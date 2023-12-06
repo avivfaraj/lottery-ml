@@ -20,6 +20,11 @@ def drawing_2():
     return drawing2
 
 
+def test_invalid_drawing_type():
+    with pytest.raises(ValueError):
+        Drawing("Another Billions", "2023-05-10")
+
+
 # Testing adding functions
 def test_add_winning_number(drawing_1):
     drawing_1.add_winning_number(10, False)
