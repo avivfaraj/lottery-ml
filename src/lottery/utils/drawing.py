@@ -1,13 +1,21 @@
 # Prevent relative import error
 try:
     from .powerball import Powerball
+    from .megaball import Megaball
 except ImportError:
     from powerball import Powerball
+    from megaball import Megaball
 
 from typing import List
 
 # Regular winner numbers constant
 WHITEBALL_COUNT = 5
+
+DRAWING_TYPE_DICT = {
+    "powerball": Powerball,
+    # TODO: Implement Megaball class
+    "megaball": Megaball,
+}
 
 
 # Define count error - there are 5 white balls and 1 powerball in each drawing.
@@ -17,10 +25,17 @@ class CountError(Exception):
 
 
 class Drawing:
-    def __init__(self, date, estimated_jackpot: int = -1):
+    def __init__(self, drawing_type: str, date: str, estimated_jackpot: int = -1):
+        self.drawing_type = self.set_drawing_type(drawing_type)
         self.winning_numbers_ls = []
         self.date = date
         self.estimated_jackpot = estimated_jackpot
+
+    def set_drawing_type(self, drawing_type: str) -> str:
+        if drawing_type.lower() not in DRAWING_TYPE_DICT.keys():
+            raise ValueError(f"{drawing_type} Drawing Does Not Exist!")
+
+        return drawing_type.lower()
 
     def ensure_data_is_valid(self, number: int, is_power_ball: bool) -> None:
         """
@@ -72,7 +87,7 @@ class Drawing:
         """
         self.ensure_data_is_valid(number, is_power_ball)
         index = len(self.winning_numbers_ls) + 1
-        ball = Powerball(index, number, is_power_ball)
+        ball = DRAWING_TYPE_DICT[self.drawing_type](index, number, is_power_ball)
         self.winning_numbers_ls.append(ball)
 
     def add_winning_ls(self, winners_ls: List[int]) -> None:
