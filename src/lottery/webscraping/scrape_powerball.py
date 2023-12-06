@@ -137,7 +137,7 @@ class ScrapePowerBall:
         self.len_drawings = 0
         for card in self.cards_ls:
             date = self.extract_date(card)
-            drawing = Drawing(date, self.scrape_jackpot(card))
+            drawing = Drawing("powerball", date, self.scrape_jackpot(card))
             try:
                 drawing.add_winning_ls(
                     [int(item.text) for item in card.find_elements(By.CLASS_NAME, "white-balls")]
@@ -278,7 +278,7 @@ class ScrapePowerBall:
                     continue
 
                 # Initialize drawing with its date
-                drawing = Drawing(line[0])
+                drawing = Drawing("powerball",line[0])
 
                 # Add white-balls to drawing
                 drawing.add_winning_ls([int(i) for i in line[1:6]])

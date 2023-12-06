@@ -9,12 +9,12 @@ import pytest
 
 @pytest.fixture
 def drawing_1():
-    return Drawing("2023-06-10")
+    return Drawing("powerball", "2023-06-10")
 
 
 @pytest.fixture
 def drawing_2():
-    drawing2 = Drawing("2023-06-11")
+    drawing2 = Drawing("Powerball", "2023-06-11")
     drawing2.add_winning_ls([1, 20, 50, 30, 40])
     drawing2.add_winning_number(2, True)
     return drawing2
